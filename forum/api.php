@@ -31,16 +31,26 @@ function register(){
     $fullname = $_POST['fullname'];
     $email = $_POST['email'];
     $password = $_POST['password'];
-    $response = "Registration failed";
-    if($fullname and $email and $password){
-        $sql = "INSERT INTO user_tbl(fullname,email,password) VALUES ('$fullname','$email','$password')";
-        $res = mysqli_query($conn,$sql);
-        if($res){
-            $response = "Registration is Successful";
-        }
+    $response = '';
+    $sql_email = "SELECT * FROM user_tbl WHERE email = '$email'";
+    $res_email = $conn->query($sql_email);
+    if($res_email->num_rows > 0){
+    	$response = "Email is already taken";
+    }else{
+    	if($fullname and $password){
+		    $sql2 = "INSERT INTO user_tbl(fullname,email,password) VALUES ('$fullname','$email','$password')";
+		    $res = mysqli_query($conn,$sql2);
+		    if($res){
+		    	$response = "Registration is Successful";
+		    }else{
+		    	$response = "Registration failed";
+		    }
+
+		  
+	    }
     }
-    $data['data'] = $response;
-    echo json_encode($data);
+     	 $data['data'] = $response;
+		echo json_encode($data);
 }
 
 function login(){
@@ -56,8 +66,9 @@ function login(){
         }else{
            $response = 0;
            }
-    $data['data'] = $response;
+   	$data['data'] = $response;
     echo json_encode($data);
+
 }
 
 function getuser(){
@@ -178,7 +189,10 @@ function getcomments(){
 		//encode to json format
 		$jsonData = json_encode($rows);
 		echo($jsonData);
-	}else{}	
+	}else{
+		$jsonData['data'] = "empty";
+		echo json_encode($jsonData);
+	}	
 }
 
 function comments(){
