@@ -15,7 +15,7 @@ export default function RegistrationScreen({navigation}) {
     const [newpassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
   
-    const url = "http://192.168.1.32/forum/api.php?op=";
+    const url = "http://192.168.1.2/forum/api.php?op=";
 
     useEffect(()=>{
       async function getUserId(){

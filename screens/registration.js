@@ -10,7 +10,7 @@ export default function RegistrationScreen({navigation}) {
     const [confirmPassword, setConfirmPassword] = useState('')
     
 
-    const url = "http://192.168.1.32/forum/api.php?op=";
+    const url = "http://192.168.1.2/forum/api.php?op=";
 
     const onRegisterPress = () => {
 
@@ -42,11 +42,15 @@ export default function RegistrationScreen({navigation}) {
                     })
                     .then((response)=>response.json())
                     .then((json)=>{
-                        alert(json.data);
-                        setFullName('');
-                        setEmail('');
-                        setPassword('');
-                        setConfirmPassword('');
+                        if(json.data == "Email is already taken" || json.data == "Registration failed"){
+                            alert(json.data);
+                        }else{
+                            alert(json.data);
+                            setFullName('');
+                            setEmail('');
+                            setPassword('');
+                            setConfirmPassword('');
+                        }
                     })
                 }
             }

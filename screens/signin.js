@@ -9,7 +9,7 @@ function Signin({navigation}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const url = "http://192.168.1.32/forum/api.php?op=";
+  const url = "http://192.168.1.2/forum/api.php?op=";
   
 
 

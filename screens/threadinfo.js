@@ -21,7 +21,8 @@ function TheadInfo ({route,navigation}){
     const [copyCommentModal, setCopyCommentModal] = useState(false)//for copying comments
     const [boolFocus, setBoolFocus] = useState(false)//for editing comments
     const [editSelected, setEditSelected] = useState(false)
-    const url = "http://192.168.1.32/forum/api.php?op=";
+    const [commentCounter, setCommentCounter] = useState(false)
+    const url = "http://192.168.1.2/forum/api.php?op=";
 
     useEffect(()=>{
         async function getThread(){
@@ -41,7 +42,12 @@ function TheadInfo ({route,navigation}){
         await fetch(url+"getcomments&thread_id="+thread_id)
         .then((response)=>response.json())
         .then((json)=>{
-            setCommentList(json)
+            if(json.data == "empty"){
+                setCommentCounter(false)
+            }else{
+                setCommentCounter(true)
+                setCommentList(json)
+            }          
         })
         .catch((error)=>{
             console.log(error);
@@ -132,8 +138,8 @@ function TheadInfo ({route,navigation}){
             setComment_id('');
             setCount(count+1);
             setEditSelected(false);
-            setBoolFocus(false)
             setDeleteModal(false)
+   
         })
     }
 
@@ -162,18 +168,23 @@ function TheadInfo ({route,navigation}){
                     </View>
 
                     <View>
-                    {
+                    {commentCounter?
                       
                         commentList.map((item, index) => {
                             return(
                             <View key={index}>
                                 <TouchableOpacity style={styles.comment} onLongPress={() => onLongPress(item.comment_id, item.comment, item.user_id)}>
-                                    <Text style={{fontWeight:'bold'}}>{item.fullname}</Text>
-                                    <Text style={{}} >{item.comment}</Text>
+                                    <Text style={{fontWeight:'bold',backgroundColor:'#F2F0F0'}}>{item.fullname}</Text>
+                                    <Text style={{justifyContent:'center',backgroundColor:'#F2F0F0'}} >{item.comment}</Text>
                                 </TouchableOpacity>
                             </View>
                             )
                         })
+
+                        :
+                        <View>
+                           
+                        </View>
                   
                     }  
                     </View> 
@@ -322,6 +333,7 @@ const styles = StyleSheet.create({
       paddingBottom: 15,
       borderBottomWidth: 2,
       borderBottomColor: '#CCCCCC',
+      marginBottom:10
     },
     activity: {
       position: 'absolute',
@@ -336,10 +348,7 @@ const styles = StyleSheet.create({
       marginTop: 10
     },
     comment: {
-        marginTop:10,
-        backgroundColor:'#F2F0F0',
-        borderRadius:10,
-        height:70,
+        marginBottom:10,
     },
     tasksWrapper: {
         paddingTop: 80,

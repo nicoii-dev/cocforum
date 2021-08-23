@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-community/async-storage';
 import {Text,Card} from 'react-native-elements';
 
 function HomeScreen({ route,navigation }) {
-    const url = "http://192.168.1.32/forum/api.php?op=";
+    const url = "http://192.168.1.2/forum/api.php?op=";
     const [listData, setlistData] = useState([])
     const [title, setTitle] = useState('')
     const [thread, setThread] = useState('')
