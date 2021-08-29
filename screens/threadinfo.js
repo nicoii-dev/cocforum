@@ -6,7 +6,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 
 function TheadInfo ({route,navigation}){
     const [textHeight, setTextHeight] = useState('')
-    const { thread_id, otherParam } = route.params;
+    const { post_id, token, user_id } = route.params;
     const [title, setTitle] = useState('')
     const [thread, setThread] = useState('')
     const [author, setAuthor] = useState('')
@@ -14,7 +14,6 @@ function TheadInfo ({route,navigation}){
     const [comment, setComment] = useState('')
     const [comment_id, setComment_id] = useState('')
     const [newComment, setNewCommet] = useState('')
-    const [userId, setUserId] = useState('')
     const [count, setCount] = useState(0)//for re-rendering
     const [modalVisible, setModalVisible] = useState(false)//for modal EDIT
     const [deleteModal, setDeleteModal] = useState(false)//for modal DELETE
@@ -22,16 +21,20 @@ function TheadInfo ({route,navigation}){
     const [boolFocus, setBoolFocus] = useState(false)//for editing comments
     const [editSelected, setEditSelected] = useState(false)
     const [commentCounter, setCommentCounter] = useState(false)
-    const url = "http://192.168.1.2/forum/api.php?op=";
 
     useEffect(()=>{
         async function getThread(){
-        await fetch(url+"thread&thread_id="+thread_id)
+        await fetch('http://192.168.1.2:8000/api/post/'+post_id,{
+            method:'GET',
+            headers:{
+                'Authorization': `Bearer ${token}`,
+            }
+        })
         .then((response)=>response.json())
         .then((json)=>{
             setTitle(json[0].title)
-            setThread(json[0].thread)
-            setAuthor(json[0].fullname)  
+            setThread(json[0].post)
+            setAuthor(json[0].name)  
            
         })
         .catch((error)=>{
@@ -39,7 +42,12 @@ function TheadInfo ({route,navigation}){
         })
       }
       async function getComments(){
-        await fetch(url+"getcomments&thread_id="+thread_id)
+        await fetch('http://192.168.1.2:8000/api/post/'+post_id+'/comment',{
+            method:'GET',
+            headers:{
+                'Authorization': `Bearer ${token}`,
+            }
+        })
         .then((response)=>response.json())
         .then((json)=>{
             if(json.data == "empty"){
@@ -53,13 +61,6 @@ function TheadInfo ({route,navigation}){
             console.log(error);
         })
       }
-      async function getUserId(){
-        AsyncStorage.getItem('userId')
-        .then(data => {
-            setUserId(data)
-        })
-      }
-      getUserId();
       getThread();
       getComments();
     }, [count])
@@ -68,24 +69,26 @@ function TheadInfo ({route,navigation}){
         if(comment == ''){
             alert('Please fill out empty fields');
         }else{
-            var operation = url+"comments"
-            fetch(operation,{
-                method:'post',
+            fetch('http://192.168.1.2:8000/api/post/'+post_id+'/comment',{
+                method:'POST',
                 headers:{
-                    'Content-Type':'application/x-www-form-urlencoded'
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type':'application/json'
                 },
-                body:"comment="+comment+"&thread_id="+thread_id+"&user_id="+userId
+                body:JSON.stringify({"comment":comment,"post_id":post_id, "user_id":user_id})
             })
             .then((response)=>response.json())
             .then((json)=>{
+                console.log(json)
+                commentList.push({"id":json[0].id,"comment":json[0].comment,"post_id":json[0].post_id,"user_id":json[0].user_id, "name":json[0].name})
                 setComment('');
-                setCount(count+1);
             })
         }
     }
 
 
-    function onLongPress(comment_id, comment, user_id){
+    function onLongPress(comment_id, comment, userId){
         setComment_id(comment_id)
         setNewCommet(comment)
         if(user_id == userId){
@@ -109,12 +112,29 @@ function TheadInfo ({route,navigation}){
     }
 
     function UpdateComment(){
-        fetch(url+"updatecomment&comment_id="+comment_id+"&comment="+comment)
+        fetch('http://192.168.1.2:8000/api/post/'+post_id+'/comment/'+comment_id,{
+            method:'PUT',
+            headers:{
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+               // x-www-form-urlencoded
+            },
+            body:JSON.stringify({"comment":comment})
+        })
         .then((response)=>response.json())
         .then((json)=>{
+            console.log(json);
+            commentList.some(function(obj){
+                if (obj.id == json.id){
+                     //change the value here
+                     obj.comment = json.comment;
+                     return true;    //breaks out of he loop
+                }
+               
+             });
             setComment('');
             setComment_id('');
-            setCount(count+1);
             setEditSelected(false);
             setBoolFocus(false)
         })
@@ -131,15 +151,28 @@ function TheadInfo ({route,navigation}){
     }
 
     function deleteComment(){
-        fetch(url+"deletecomment&comment_id="+comment_id)
+        fetch('http://192.168.1.2:8000/api/post/'+post_id+'/comment/'+comment_id,{
+            method:'DELETE',
+            headers:{
+                'Authorization': `Bearer ${token}`,
+            },
+        })
         .then((response)=>response.json())
         .then((json)=>{
+            if(json == "1"){
+                for (var i = 0; i < commentList.length; i++) {
+                    if(commentList[i].id == comment_id){
+                            commentList.splice(i, 1);
+                    }
+                }
+                alert("Data deleted successfully.")
+            }else{
+                alert("Something went wrong.")
+            }
             setComment('');
             setComment_id('');
-            setCount(count+1);
             setEditSelected(false);
             setDeleteModal(false)
-   
         })
     }
 
@@ -173,8 +206,8 @@ function TheadInfo ({route,navigation}){
                         commentList.map((item, index) => {
                             return(
                             <View key={index}>
-                                <TouchableOpacity style={styles.comment} onLongPress={() => onLongPress(item.comment_id, item.comment, item.user_id)}>
-                                    <Text style={{fontWeight:'bold',backgroundColor:'#F2F0F0'}}>{item.fullname}</Text>
+                                <TouchableOpacity style={styles.comment} onLongPress={() => onLongPress(item.id, item.comment, item.user_id)}>
+                                    <Text style={{fontWeight:'bold',backgroundColor:'#F2F0F0'}}>{item.name}</Text>
                                     <Text style={{justifyContent:'center',backgroundColor:'#F2F0F0'}} >{item.comment}</Text>
                                 </TouchableOpacity>
                             </View>
@@ -289,7 +322,7 @@ function TheadInfo ({route,navigation}){
                     style={styles.writeTaskWrapper}
                     >
                     <TextInput style={[styles.input, {height: Math.max(50, textHeight)}]} 
-                                    placeholder={'Write a task'} 
+                                    placeholder={'Comment'} 
                                     value={comment}
                                     multiline={true} 
                                     autoFocus={boolFocus}

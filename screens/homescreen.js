@@ -3,72 +3,78 @@ import { Button, View, StyleSheet, ScrollView, TextInput, TouchableOpacity, Moda
 import {Dialog, HelperText, Portal} from 'react-native-paper'
 import AsyncStorage from '@react-native-community/async-storage';
 import {Text,Card} from 'react-native-elements';
+import axios from 'axios';
 
 function HomeScreen({ route,navigation }) {
-    const url = "http://192.168.1.2/forum/api.php?op=";
     const [listData, setlistData] = useState([])
     const [title, setTitle] = useState('')
     const [thread, setThread] = useState('')
     const [thread_id, setThread_id] = useState('')
     const [newTitle, setnewTitle] = useState('')
     const [newThread, setnewThread] = useState('')
-    const [userId, setUserId] = useState('')
     const [count, setCount] = useState(0)//for re-rendering
     const [visible, setVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false)
     const [deleteModal, setDeleteModal] = useState(false)//for modal DELETE
     
+    const [auth, setAuth] = useState([]);
+    
     useEffect(()=>{
         async function DataList(){
-        await fetch(url)
-        .then((response)=>response.json())
-        .then((json)=>{
-            setlistData(json);
-        })
-        .catch((error)=>{
-            console.log(error);
-        })
+            axios
+            .get("http://192.168.1.2:8000/api/post")
+            .then(function (response) {
+              // handle success
+              setlistData(response.data);
+            })
+         
       }
-      async function getUserId(){
-        AsyncStorage.getItem('userId')
+      async function getAuth(){
+        AsyncStorage.getItem('auth')
         .then(data => {
-            setUserId(data)
+            setAuth(data)
         })
       }
       DataList();
-      getUserId();
-    }, [count])
+      getAuth();
+    },[count])
 
     function addThread(){
         if(title == '' || thread == ''){
             alert('Please fill out all fields');
         }else{
-            var operation = url+"create"
-            fetch(operation,{
-                method:'post',
+            fetch('http://192.168.1.2:8000/api/post',{
+                method:'POST',
                 headers:{
-                    'Content-Type':'application/x-www-form-urlencoded'
+                    'Authorization': `Bearer ${JSON.parse(auth).token}`,
+                    'Accept': 'application/json',
+                    'Content-Type':'application/json'
                 },
-                body:"title="+title+"&thread="+thread+"&user_id="+userId
+                body:JSON.stringify({"title":title,"post":thread,"user_id":JSON.parse(auth).user_id})
             })
             .then((response)=>response.json())
             .then((json)=>{
-                setTitle('');
-                setThread('');
-                setVisible(false);
-                setCount(count+1);
+               listData.push({"id":json.id,"user_id":json.user_id,"title":json.title,"post":json.post})
+               setTitle('');
+               setThread('');
+               setVisible(false)
             })
         }
     }
 
     function onLongPress(thread_id, user_id, title, thread){
-        if(userId == user_id){
+        if(JSON.parse(auth).user_id == user_id){
             setModalVisible(true)
             setThread_id(thread_id)
             setnewTitle(title)
             setnewThread(thread)
         }
 
+    }
+
+    function cancelClicked(){
+        setModalVisible(!modalVisible);
+        setnewTitle('');
     }
 
     function editClicked(){
@@ -79,24 +85,38 @@ function HomeScreen({ route,navigation }) {
     }
 
     function UpdateThread(){
-        var operation = url+"updatethread&thread_id="+thread_id
-        fetch(operation,{
-            method:'post',
-            headers:{
-                'Content-Type':'application/x-www-form-urlencoded'
-            },
-            body:"title="+title+"&thread="+thread
-        })
-        .then((response)=>response.json())
-        .then((json)=>{
-            setTitle('');
-            setThread('');
-            setVisible(false)
-            setCount(count+1);
-            alert(json.data)
-        })
+        if(title == '' || thread == ''){
+            alert('Please fill out all fields');
+        }else{
+            fetch('http://192.168.1.2:8000/api/post/'+thread_id,{
+                method:'PUT',
+                headers:{
+                    'Authorization': `Bearer ${JSON.parse(auth).token}`,
+                    'Accept': 'application/json',
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({"title":title,"post":thread})
+            })
+            .then((response)=>response.json())
+            .then((json)=>{
+                listData.some(function(obj){
+                    if (obj.id == json.id){
+                         //change the value here
+                         obj.title = json.title;
+                         obj.post = json.post;
+                         return true;    //breaks out of he loop
+                        
+                    }
+                   
+                 });
+                 alert("Updated successfully.")
+                setTitle('');
+                setThread('');
+                setnewTitle('');
+                setVisible(false)
+            })
+        }
     }
-
 
     function deleteClicked(){
         setDeleteModal(true)
@@ -108,12 +128,25 @@ function HomeScreen({ route,navigation }) {
     }
 
     function deleteThread(){
-        fetch(url+"deletethread&thread_id="+thread_id)
+        fetch('http://192.168.1.2:8000/api/post/'+thread_id,{
+            method:'DELETE',
+            headers:{
+                'Authorization': `Bearer ${JSON.parse(auth).token}`,
+            },
+        })
         .then((response)=>response.json())
         .then((json)=>{
-            setCount(count+1);
+            if(json == "1"){
+                for (var i = 0; i < listData.length; i++) {
+                    if(listData[i].id == thread_id){
+                            listData.splice(i, 1);
+                    }
+                }
+                alert("Data deleted successfully.")
+            }else{
+                alert("Something went wrong.")
+            }
             setDeleteModal(false)
-            alert(json.data);
         })
     }
 
@@ -123,20 +156,21 @@ function HomeScreen({ route,navigation }) {
             {/* Added this scroll view to enable scrolling when list gets longer than the page */}
             <ScrollView >
                 {
-                listData.map((item, index) => {
+                listData.slice(0).reverse().map((item, index) => {
                     return(
                         <Card style={styles.containerCard}key={index}>
                             <View style={styles.subContainer} >
                                 <TouchableOpacity
                                         onPress={() => navigation.navigate("ThreadInfo",{
                                             screen: 'ThreadScreen',
-                                            params: { thread_id: item.thread_id }
-                                            })} onLongPress={()=>{onLongPress(item.thread_id, item.user_id, item.title, item.thread)}}>
+                                            params: { post_id: item.id , token:JSON.parse(auth).token, user_id:JSON.parse(auth).user_id}
+                                            })} 
+                                        onLongPress={()=>{onLongPress(item.id, item.user_id, item.title, item.post)}}>
                                     <View>
                                         <Text h4>{item.title}</Text>
                                     </View>
                                     <View>
-                                        <Text h5>{item.thread}</Text>
+                                        <Text h5>{item.post}</Text>
                                     </View>
                                 </TouchableOpacity>
                             </View>
@@ -169,7 +203,7 @@ function HomeScreen({ route,navigation }) {
                             <Text style={{padding:10, textAlign:'center', color:'red'}}>Delete</Text>
                         </Pressable >
                         <Pressable 
-                        onPress={() => setModalVisible(!modalVisible)}
+                        onPress={() => cancelClicked()}
                         >
                             <Text style={{padding:10, color:'blue'}}>Cancel</Text>
                         </Pressable >

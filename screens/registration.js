@@ -8,9 +8,6 @@ export default function RegistrationScreen({navigation}) {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
-    
-
-    const url = "http://192.168.1.2/forum/api.php?op=";
 
     const onRegisterPress = () => {
 
@@ -32,20 +29,24 @@ export default function RegistrationScreen({navigation}) {
                 }else if(password != confirmPassword){
                     alert('Password did not match');
                 }else{
-                    var operation = url+"register"
-                    fetch(operation,{
-                        method:'post',
+                    fetch('http://192.168.1.2:8000/api/register',{
+                        method:'POST',
                         headers:{
-                            'Content-Type':'application/x-www-form-urlencoded'
+                            'Accept': 'application/json',
+                            'Content-Type':'application/json'
                         },
-                        body:"fullname="+fullName+"&email="+email+"&password="+password
+                        body:JSON.stringify({
+                            "name":fullName,
+                            "email":email,
+                            "password":password,
+                            "password_confirmation":confirmPassword})
                     })
                     .then((response)=>response.json())
                     .then((json)=>{
-                        if(json.data == "Email is already taken" || json.data == "Registration failed"){
-                            alert(json.data);
+                        if(json.errors){
+                            alert(json.errors.email);
                         }else{
-                            alert(json.data);
+                            alert("Registration is successful.");
                             setFullName('');
                             setEmail('');
                             setPassword('');

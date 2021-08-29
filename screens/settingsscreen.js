@@ -1,19 +1,36 @@
-import React from 'react';
-import { View, Text, Button, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
-import { useTheme } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react'
+import { View, Text, Button, StyleSheet} from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
+import { createIconSetFromFontello } from 'react-native-vector-icons';
 
 const SettingScreen = ({navigation}) => {
+  const [token, setToken] = useState('');
 
-  const { colors } = useTheme();
-
-  const theme = useTheme();
+    useEffect(()=>{
+      async function getToken(){
+        AsyncStorage.getItem('auth')
+        .then(data => {
+          setToken(JSON.parse(data).token)
+        })
+      }
+      getToken();
+    },)
   
   function Logout(){
-    AsyncStorage.clear();
-    navigation.navigate("Auth")
-  }
 
+     fetch('http://192.168.1.2:8000/api/logout',{
+        method:'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then((response)=>response.json())
+      .then((json)=>{
+        alert(json.message)
+        AsyncStorage.clear();
+        navigation.navigate("Auth")
+      })
+  }
   function profile(){
     navigation.navigate('SettingsStack')
   }

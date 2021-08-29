@@ -9,41 +9,54 @@ function Signin({navigation}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const url = "http://192.168.1.2/forum/api.php?op=";
-  
-
-
   const onLoginPress = () => {
     if(!email.trim()){
         alert('Please enter your Email');
     }else if(!password.trim()){
         alert('Please enter your password');
     }else{
-            var operation = url+"login"
-            fetch(operation,{
-                method:'post',
+            fetch('http://192.168.1.2:8000/api/login',{
+                method:'POST',
                 headers:{
-                    'Content-Type':'application/x-www-form-urlencoded'
+                    'Accept': 'application/json',
+                    'Content-Type':'application/json'
                 },
-                body:"email="+email+"&password="+password
+                body:JSON.stringify({"email":email,"password":password})
             })
             .then((response)=>response.json())
             .then((json)=>{
-                if(json.data == 0){
-                    alert("Email or Password is incorrect");
+                if(json.message == "Bad creds"){
+                    alert("Incorrect email or password");
                 }else{
-                        try {
-                            AsyncStorage.setItem('userId', json.data)
-                        }catch (err){
-                            console.log(err)
-                        }
+                    const auth = {
+                        user_id: json.user.id, 
+                        token: json.token,
+                      };
+                    AsyncStorage.setItem("auth", JSON.stringify(auth));
                     navigation.replace('TabNavigation');
                 }
-                
+               
             })
+             
     }
 
   }
+  
+/*
+  const url = 'http://127.0.0.1:8000/api/';
+ const onlogin = () =>{
+    axios.post('http://127.0.0.1:8000/api/login',{
+        email: email,
+        password: password
+    }).then(response =>{
+        console.log(response.data);
+    }).catch(error => {
+        console.log(error);
+    })
+}
+*/
+
+
     const onFooterLinkPress = () => {
         navigation.navigate('RegisterScreen')
     }
@@ -78,7 +91,7 @@ function Signin({navigation}) {
           />
           <TouchableOpacity
               style={styles.button}
-              onPress={() => onLoginPress()}>
+              onPress={()=> onLoginPress()}>
               <Text style={styles.buttonTitle}>Log in</Text>
           </TouchableOpacity>
           <View style={styles.footerView}>
