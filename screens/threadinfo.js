@@ -80,7 +80,6 @@ function TheadInfo ({route,navigation}){
             })
             .then((response)=>response.json())
             .then((json)=>{
-                console.log(json)
                 commentList.push({"id":json[0].id,"comment":json[0].comment,"post_id":json[0].post_id,"user_id":json[0].user_id, "name":json[0].name})
                 setComment('');
             })
@@ -124,7 +123,6 @@ function TheadInfo ({route,navigation}){
         })
         .then((response)=>response.json())
         .then((json)=>{
-            console.log(json);
             commentList.some(function(obj){
                 if (obj.id == json.id){
                      //change the value here
