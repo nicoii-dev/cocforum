@@ -4,10 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/homescreen';
 import SettingsScreen from '../screens/settingsscreen';
-import AsyncStorage from '@react-native-community/async-storage';
+import Payment from '../screens/payment';
+import Cart from '../screens/cart';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
 
 const RootStackScreen = (props) => (
 
@@ -29,6 +29,25 @@ const RootStackScreen = (props) => (
           headerTitleStyle: {
             fontWeight: 'bold', //Set Header text style
           },}} component={SettingsScreen} />
+
+        <Tab.Screen name="Cart" options={{tabBarLabel: 'Payment Screen', title: 'Cart', //Set Header Title
+          headerStyle: {
+            backgroundColor: '#307ecc', //Set Header color
+          },
+          headerTintColor: '#fff', //Set Header text color
+          headerTitleStyle: {
+            fontWeight: 'bold', //Set Header text style
+          },}} component={Cart} />
+
+          <Tab.Screen name="Payment" options={{tabBarLabel: 'Payment Screen', title: 'Cart', //Set Header Title
+          headerStyle: {
+            backgroundColor: '#307ecc', //Set Header color
+          },
+          headerTintColor: '#fff', //Set Header text color
+          headerTitleStyle: {
+            fontWeight: 'bold', //Set Header text style
+          },}} component={Payment} />
+          
       </Tab.Navigator>
 
 );

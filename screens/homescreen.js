@@ -105,11 +105,10 @@ function HomeScreen({ route,navigation }) {
                          obj.title = json.title;
                          obj.post = json.post;
                          return true;    //breaks out of he loop
-                        
                     }
                    
                  });
-                 alert("Updated successfully.")
+                alert("Updated successfully.")
                 setTitle('');
                 setThread('');
                 setnewTitle('');
@@ -138,8 +137,9 @@ function HomeScreen({ route,navigation }) {
         .then((json)=>{
             if(json == "1"){
                 for (var i = 0; i < listData.length; i++) {
+                    console.log(listData[i]);
                     if(listData[i].id == thread_id){
-                            listData.splice(i, 1);
+                            listData.splice(i, 1);    
                     }
                 }
                 alert("Data deleted successfully.")
