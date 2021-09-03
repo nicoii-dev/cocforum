@@ -21,16 +21,7 @@ const RootStackScreen = (props) => (
             fontWeight: 'bold', //Set Header text style
           },}} component={HomeScreen} />
 
-        <Tab.Screen name="SettingsScreen" options={{tabBarLabel: 'Settings Screen', title: 'Settings', //Set Header Title
-          headerStyle: {
-            backgroundColor: '#307ecc', //Set Header color
-          },
-          headerTintColor: '#fff', //Set Header text color
-          headerTitleStyle: {
-            fontWeight: 'bold', //Set Header text style
-          },}} component={SettingsScreen} />
-
-        <Tab.Screen name="Cart" options={{tabBarLabel: 'Payment Screen', title: 'Cart', //Set Header Title
+          <Tab.Screen name="Cart" options={{tabBarLabel: 'Payment Screen', title: 'Cart', //Set Header Title
           headerStyle: {
             backgroundColor: '#307ecc', //Set Header color
           },
@@ -39,15 +30,14 @@ const RootStackScreen = (props) => (
             fontWeight: 'bold', //Set Header text style
           },}} component={Cart} />
 
-          <Tab.Screen name="Payment" options={{tabBarLabel: 'Payment Screen', title: 'Cart', //Set Header Title
+        <Tab.Screen name="SettingsScreen" options={{tabBarLabel: 'Settings Screen', title: 'Settings', //Set Header Title
           headerStyle: {
             backgroundColor: '#307ecc', //Set Header color
           },
           headerTintColor: '#fff', //Set Header text color
           headerTitleStyle: {
             fontWeight: 'bold', //Set Header text style
-          },}} component={Payment} />
-          
+          },}} component={SettingsScreen} />
       </Tab.Navigator>
 
 );

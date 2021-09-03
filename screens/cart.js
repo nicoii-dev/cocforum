@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { StyleSheet, Button, Text, View, TouchableOpacity, ScrollView, Image, Modal } from 'react-native';
 import { Icon } from 'react-native-elements'
 import { WebView } from 'react-native-webview';
+import AsyncStorage from '@react-native-community/async-storage';
 
 function Cart ({route, navigation}) {
+
 	const [cartItems, setCartItems] = useState([
 			/* Sample data from walmart */
 			{itemId: "501436323", name: "Power Wheels Dune Racer Extreme", thumbnailImage: "https://i5.walmartimages.com/asr/a3922e8e-2128-4603-ba8c-b58d1333253b_1.44d66337098c1db8fed9abe2ff4b57ce.jpeg?odnHeight=100&odnWidth=100&odnBg=FFFFFF", color: "Red", qty: 1, salePrice: "105", checked: 0},
@@ -11,10 +13,22 @@ function Cart ({route, navigation}) {
 			{itemId: "801099131", name: "LEGO Star Wars 2019 Advent Calendar 75245 Holiday Building Kit", thumbnailImage: "https://i5.walmartimages.com/asr/9a8ea1ab-311d-455c-bda8-ce15692a8185_3.208d48e0260f80891d32b351cb116a4b.jpeg?odnHeight=100&odnWidth=100&odnBg=FFFFFF", qty: 1, color: "Blue", salePrice: "27.99", checked: 0},
 			{itemId: "42608079", name: "Little Tikes Cape Cottage Playhouse, Tan", thumbnailImage: "https://i5.walmartimages.com/asr/2654cd64-1471-44af-8b0c-1debaf598cb3_1.c30c481d1ac8fdd6aa041c0690d7214c.jpeg?odnHeight=100&odnWidth=100&odnBg=FFFFFF", color: "Purple", qty: 1, salePrice: "129.99", checked: 0},
 	])
-
+    const [count, setCount] = useState(0)//for re-rendering
 	const [checkOutItems, setCheckOutItems] = useState([]);
 	const [showModal, setShowModal] = useState(false);
 	const [total, setTotal] = useState(1);
+	const [auth, setAuth] = useState([]);
+	const [orderId, setOrderId] = useState('');
+
+    useEffect(()=>{
+      async function getAuth(){
+        AsyncStorage.getItem('auth')
+        .then(data => {
+            setAuth(data)
+        })
+      }
+      getAuth();
+    },[count])
 
 	function selectHandler(index, value){
 		const newItems = [...cartItems]; // clone the array 
@@ -49,15 +63,44 @@ function Cart ({route, navigation}) {
 		if(subtotalPrice() == 0){
 			alert("Please select item(s) to be paid");
 		}else{
-			const newItems = [...cartItems]; // clone the array
-			let checkItems = [];
-			for (var i = 0; i < newItems.length; i++) {
-				if(newItems[i].checked == 1){
-					checkItems.push({"itemId":newItems[i].itemId, "name":newItems[i].name,"thumbnailImage":newItems[i].thumbnailImage,"color": newItems[i].color, "qty":newItems[i].qty, "salePrice":newItems[i].salePrice})
+			fetch('http://192.168.1.2:8000/api/order',{
+                method:'POST',
+                headers:{
+                    'Authorization': `Bearer ${JSON.parse(auth).token}`,
+                    'Accept': 'application/json',
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({"description":"description","grand_total":subtotalPrice(),"payment_type":"paypal", "payment_status":"pending"})
+            })
+            .then((response)=>response.json())
+            .then((json)=>{
+				setOrderId(json.id);
+
+				const newItems = [...cartItems]; // clone the array
+				let checkItems = [];
+				for (var i = 0; i < newItems.length; i++) {
+					if(newItems[i].checked == 1){
+						checkItems.push({"order_id":json.id,"itemId":newItems[i].itemId, "name":newItems[i].name,"thumbnailImage":newItems[i].thumbnailImage,"color": newItems[i].color, "qty":newItems[i].qty, "price":newItems[i].salePrice})
+					}
 				}
-			}
-			setShowModal(true);
-			setCheckOutItems(checkItems);
+				setShowModal(true);
+				setCheckOutItems(checkItems);
+					fetch('http://192.168.1.2:8000/api/orderdetails',{
+						method:'POST',
+						headers:{
+							'Authorization': `Bearer ${JSON.parse(auth).token}`,
+							'Accept': 'application/json',
+							'Content-Type':'application/json'
+						},
+						body:JSON.stringify({"orders":checkItems})
+					})
+					.then((response)=>response.json())
+					.then((json)=>{
+						console.log(json);
+					})
+            })
+
+			
 		}
 	}
 
@@ -65,9 +108,32 @@ function Cart ({route, navigation}) {
 		console.log(data);
         if (data.title === "success") {
 			alert("Payment is successful.");
+				fetch('http://192.168.1.2:8000/api/order/'+orderId,{
+					method:'POST',
+					headers:{
+						'Authorization': `Bearer ${JSON.parse(auth).token}`,
+						'Accept': 'application/json',
+						'Content-Type':'application/json'
+					},
+					body:JSON.stringify({"payment_status":"paid"})
+				})
+				.then((response)=>response.json())
+				.then((json)=>{
+					//console.log(json);
+				})
           	setShowModal(false);
         } else if (data.title === "cancel") {
 			alert("Transaction cancelled.");
+				fetch('http://192.168.1.2:8000/api/order/'+orderId,{
+					method:'DELETE',
+					headers:{
+						'Authorization': `Bearer ${JSON.parse(auth).token}`,
+					},
+				})
+				.then((response)=>response.json())
+				.then((json)=>{
+					//console.log(json);
+				})
 			setShowModal(false);
         } else {
             return;
@@ -92,15 +158,6 @@ function Cart ({route, navigation}) {
 							document.getElementById('total_value').value="${subtotalPrice()}"
 						`}
                     />
-
-                   {/* <WebView
-                        javaScriptEnabled={true}
-                        style={{ flex: 1}}
-                        originWhitelist={['*']}
-                        source={{ html: htmlContent}}
-                        injectedJavaScript={''}
-                        
-				   /> */}
                 </Modal>
 
 					<ScrollView>	
